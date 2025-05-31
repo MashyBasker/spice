@@ -18,7 +18,7 @@ const Laser = struct {
 
     // TODO: Add collision detection with enemy
     pub fn laserMove(self: *Laser, laserSpeed: f32, deltaTime: f32) void {
-        if(self.isGone) return;
+        if (self.isGone) return;
 
         self.position.y -= laserSpeed * deltaTime;
 
@@ -28,7 +28,7 @@ const Laser = struct {
     }
 
     pub fn draw(self: *Laser) void {
-        if(!self.isGone) {
+        if (!self.isGone) {
             rl.drawTextureEx(self.texture, self.position, 0.0, 0.2, rl.Color.white);
         }
     }
@@ -126,11 +126,43 @@ fn updateLasers(laserList: *ArrayList(Laser), laserSpeed: f32, deltaTime: f32) v
 
     var i: usize = 0;
     while (i < laserList.items.len) {
-        if(laserList.items[i].isGone) {
+        if (laserList.items[i].isGone) {
             var laser = laserList.orderedRemove(i);
             laser.deinit();
         } else {
             i += 1;
+        }
+    }
+}
+
+fn checkCollision(laser: Laser, enemy: Enemy) bool {
+    const laser_rect = rl.Rectangle{
+        .x = laser.position.x,
+        .y = laser.position.y,
+        .width = @floatFromInt(laser.texture.width),
+        .height = @floatFromInt(laser.texture.height),
+    };
+
+    const enemy_rect = rl.Rectangle{
+        .x = enemy.position.x,
+        .y = enemy.position.y,
+        .width = @floatFromInt(enemy.texture.width),
+        .height = @floatFromInt(enemy.texture.height),
+    };
+
+    return rl.checkCollisionRecs(laser_rect, enemy_rect);
+}
+
+fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy)) void {
+    for (laserList.items) |*laser| {
+        if (laser.isGone) continue;
+        for (enemyList.items) |*enemy| {
+            if (enemy.isDead) continue;
+
+            if (checkCollision(laser.*, enemy.*)) {
+                laser.isGone = true;
+                enemy.isDead = true;
+            }
         }
     }
 }
@@ -220,12 +252,11 @@ pub fn main() !void {
         }
 
         try generateEnemy(1, &enemyList, "assets/Ship_3.png", screenWidth, screenHeight);
-
+        processCollisions(&laserList, &enemyList);
         updateEnemy(&enemyList, enemySpeed, deltaTime);
+        updateLasers(&laserList, laserSpeed, deltaTime);
 
         std.debug.print("Length of enemy list: {}\n", .{enemyList.items.len});
-
-        updateLasers(&laserList, laserSpeed, deltaTime);
 
         rl.beginDrawing();
         defer rl.endDrawing();
