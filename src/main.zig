@@ -161,6 +161,7 @@ fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy))
             if (checkCollision(laser.*, enemy.*)) {
                 laser.isDead = true;
                 enemy.isDead = true;
+                break;
             }
         }
     }
