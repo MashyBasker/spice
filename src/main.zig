@@ -16,7 +16,6 @@ const Laser = struct {
         rl.unloadTexture(self.texture);
     }
 
-    // TODO: Add collision detection with enemy
     pub fn laserMove(self: *Laser, laserSpeed: f32, deltaTime: f32) void {
         if (self.isGone) return;
 
@@ -255,8 +254,6 @@ pub fn main() !void {
         processCollisions(&laserList, &enemyList);
         updateEnemy(&enemyList, enemySpeed, deltaTime);
         updateLasers(&laserList, laserSpeed, deltaTime);
-
-        std.debug.print("Length of enemy list: {}\n", .{enemyList.items.len});
 
         rl.beginDrawing();
         defer rl.endDrawing();
