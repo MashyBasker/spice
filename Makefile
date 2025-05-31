@@ -2,3 +2,6 @@
 
 all:
 	zig build run
+
+build:
+	zig build
