@@ -1,0 +1,12 @@
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+.zig-cache/
+zig-out
+
+# pre-commit
+.pre-commit-config.yaml
