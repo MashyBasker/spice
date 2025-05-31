@@ -6,10 +6,10 @@ const ArrayList = std.ArrayList;
 const Laser = struct {
     texture: rl.Texture,
     position: rl.Vector2,
-    isGone: bool,
+    isDead: bool,
 
     pub fn init(texturePath: [:0]const u8, init_x: c_int, init_y: c_int) !Laser {
-        return Laser{ .texture = try rl.loadTexture(texturePath), .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isGone = false };
+        return Laser{ .texture = try rl.loadTexture(texturePath), .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isDead = false };
     }
 
     pub fn deinit(self: *Laser) void {
@@ -17,17 +17,17 @@ const Laser = struct {
     }
 
     pub fn laserMove(self: *Laser, laserSpeed: f32, deltaTime: f32) void {
-        if (self.isGone) return;
+        if (self.isDead) return;
 
         self.position.y -= laserSpeed * deltaTime;
 
         if (self.position.y == 0) {
-            self.isGone = true;
+            self.isDead = true;
         }
     }
 
     pub fn draw(self: *Laser) void {
-        if (!self.isGone) {
+        if (!self.isDead) {
             rl.drawTextureEx(self.texture, self.position, 0.0, 0.2, rl.Color.white);
         }
     }
@@ -125,7 +125,7 @@ fn updateLasers(laserList: *ArrayList(Laser), laserSpeed: f32, deltaTime: f32) v
 
     var i: usize = 0;
     while (i < laserList.items.len) {
-        if (laserList.items[i].isGone) {
+        if (laserList.items[i].isDead) {
             var laser = laserList.orderedRemove(i);
             laser.deinit();
         } else {
@@ -154,12 +154,12 @@ fn checkCollision(laser: Laser, enemy: Enemy) bool {
 
 fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy)) void {
     for (laserList.items) |*laser| {
-        if (laser.isGone) continue;
+        if (laser.isDead) continue;
         for (enemyList.items) |*enemy| {
             if (enemy.isDead) continue;
 
             if (checkCollision(laser.*, enemy.*)) {
-                laser.isGone = true;
+                laser.isDead = true;
                 enemy.isDead = true;
             }
         }
@@ -207,6 +207,8 @@ pub fn main() !void {
     const playerSpeed: c_int = 200;
     const laserSpeed: c_int = 500;
     const enemySpeed: c_int = 50;
+    const SPAWN_INTERVAL: f32 = 1.5;
+    var spawnTimer: f32 = 0.0;
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -250,7 +252,11 @@ pub fn main() !void {
             try spaceship.shootLaser("assets/laserBullet.png", &laserList);
         }
 
-        try generateEnemy(1, &enemyList, "assets/Ship_3.png", screenWidth, screenHeight);
+        spawnTimer += deltaTime;
+        if(spawnTimer >= SPAWN_INTERVAL) {
+            try generateEnemy(1, &enemyList, "assets/Ship_3.png", screenWidth, screenHeight);
+            spawnTimer = 0.0;
+        }
         processCollisions(&laserList, &enemyList);
         updateEnemy(&enemyList, enemySpeed, deltaTime);
         updateLasers(&laserList, laserSpeed, deltaTime);
