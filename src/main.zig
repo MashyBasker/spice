@@ -8,8 +8,8 @@ const Laser = struct {
     position: rl.Vector2,
     isDead: bool,
 
-    pub fn init(texturePath: [:0]const u8, init_x: c_int, init_y: c_int) !Laser {
-        return Laser{ .texture = try rl.loadTexture(texturePath), .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isDead = false };
+    pub fn init(texture: rl.Texture, init_x: c_int, init_y: c_int) Laser {
+        return Laser{ .texture = texture, .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isDead = false };
     }
 
     pub fn deinit(self: *Laser) void {
@@ -39,9 +39,9 @@ const Enemy = struct {
     screenHeight: c_int,
     isDead: bool,
 
-    pub fn init(texturePath: [:0]const u8, screenWidth: c_int, screenHeight: c_int) !Enemy {
+    pub fn init(texture: rl.Texture, screenWidth: c_int, screenHeight: c_int) Enemy {
         return Enemy{
-            .texture = try rl.loadTexture(texturePath),
+            .texture = texture,
             .position = rl.Vector2{ .x = @floatFromInt(rand.intRangeAtMost(c_int, 0, screenWidth)), .y = 5 },
             .screenHeight = screenHeight,
             .isDead = false,
@@ -112,8 +112,8 @@ const SpaceShip = struct {
         if (self.position.x < 0) self.position.x = 0;
     }
 
-    pub fn shootLaser(self: *SpaceShip, laserTexturePath: [:0]const u8, laserSlice: *ArrayList(Laser)) !void {
-        const laserBullet = try Laser.init(laserTexturePath, @intFromFloat(self.position.x), @intFromFloat(self.position.y));
+    pub fn shootLaser(self: *SpaceShip, laserTexture: rl.Texture, laserSlice: *ArrayList(Laser)) !void {
+        const laserBullet = Laser.init(laserTexture, @intFromFloat(self.position.x), @intFromFloat(self.position.y));
         try laserSlice.append(laserBullet);
     }
 };
@@ -126,8 +126,8 @@ fn updateLasers(laserList: *ArrayList(Laser), laserSpeed: f32, deltaTime: f32) v
     var i: usize = 0;
     while (i < laserList.items.len) {
         if (laserList.items[i].isDead) {
-            var laser = laserList.orderedRemove(i);
-            laser.deinit();
+            _ = laserList.orderedRemove(i);
+            // laser.deinit();
         } else {
             i += 1;
         }
@@ -181,8 +181,8 @@ fn updateEnemy(enemyList: *ArrayList(Enemy), enemySpeed: f32, deltaTime: f32) vo
     var i: usize = 0;
     while (i < enemyList.items.len) {
         if (enemyList.items[i].isDead) {
-            var enemy = enemyList.orderedRemove(i);
-            enemy.deinit();
+            _ = enemyList.orderedRemove(i);
+            // enemy.deinit();
         } else {
             i += 1;
         }
@@ -195,9 +195,9 @@ fn drawEnemy(enemyList: *ArrayList(Enemy)) void {
     }
 }
 
-fn generateEnemy(n: usize, enemyList: *ArrayList(Enemy), texturePath: [:0]const u8, width: c_int, height: c_int) !void {
+fn generateEnemy(n: usize, enemyList: *ArrayList(Enemy), texture: rl.Texture, width: c_int, height: c_int) !void {
     for (0..n) |_| {
-        const enemy = try Enemy.init(texturePath, width, height);
+        const enemy = Enemy.init(texture, width, height);
         try enemyList.append(enemy);
     }
 }
@@ -238,6 +238,10 @@ pub fn main() !void {
     var spaceship = try SpaceShip.init("assets/Ship_2.png", screenWidth, screenHeight);
     defer spaceship.deinit();
 
+    const laserTexture = try rl.loadTexture("assets/laserBullet.png");
+    const enemyTexture = try rl.loadTexture("assets/Ship_3.png");
+
+
     while (!rl.windowShouldClose()) {
         const deltaTime = rl.getFrameTime();
 
@@ -250,17 +254,18 @@ pub fn main() !void {
         }
 
         if (rl.isKeyDown(.space)) {
-            try spaceship.shootLaser("assets/laserBullet.png", &laserList);
+            try spaceship.shootLaser(laserTexture, &laserList);
         }
 
         spawnTimer += deltaTime;
         if(spawnTimer >= SPAWN_INTERVAL) {
-            try generateEnemy(1, &enemyList, "assets/Ship_3.png", screenWidth, screenHeight);
+            try generateEnemy(1, &enemyList, enemyTexture, screenWidth, screenHeight);
             spawnTimer = 0.0;
         }
         processCollisions(&laserList, &enemyList);
         updateEnemy(&enemyList, enemySpeed, deltaTime);
         updateLasers(&laserList, laserSpeed, deltaTime);
+
 
         rl.beginDrawing();
         defer rl.endDrawing();
