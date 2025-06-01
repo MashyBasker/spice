@@ -224,10 +224,17 @@ pub fn main() !void {
     var enemyList = ArrayList(Enemy).init(allocator);
     defer enemyList.deinit();
 
+
     rl.initWindow(screenWidth, screenHeight, "Space Invaders");
     defer rl.closeWindow();
 
+    rl.initAudioDevice();
+    defer rl.closeAudioDevice();
+
     rl.setTargetFPS(60);
+
+    const shootSound: rl.Sound = try rl.loadSound("assets/laser.wav");
+    defer rl.unloadSound(shootSound);
 
     var spaceship = try SpaceShip.init("assets/Ship_2.png", screenWidth, screenHeight);
     defer spaceship.deinit();
@@ -250,6 +257,8 @@ pub fn main() !void {
 
             if (rl.isKeyPressed(.space)) {
                 try spaceship.shootLaser(laserTexture, &laserList);
+                rl.setSoundPitch(shootSound, 2.0);
+                rl.playSound(shootSound);
             }
 
             spawnTimer += deltaTime;

@@ -21,6 +21,8 @@
     wayland
     libxkbcommon
     alsa-lib
+    pulseaudio
+    pipewire
   ];
 
   env = {
@@ -38,6 +40,7 @@
       pkgs.wayland
       pkgs.libxkbcommon
       pkgs.alsa-lib
+      pkgs.pulseaudio
     ];
   };
 }
