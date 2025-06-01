@@ -243,7 +243,18 @@ pub fn main() !void {
     const enemyTexture = try rl.loadTexture("assets/Ship_3.png");
 
 
+
     main_loop: while(!rl.windowShouldClose()){
+        while(!rl.windowShouldClose()) {
+            if(rl.isKeyPressed(.enter)) {
+                break;
+            }
+
+            rl.beginDrawing();
+            defer rl.endDrawing();
+            rl.drawText("Press Enter to start", 280, 200, 24, rl.Color.white);
+        }
+
         while (!rl.windowShouldClose()) {
             const deltaTime = rl.getFrameTime();
 
