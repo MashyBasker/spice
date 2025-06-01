@@ -147,7 +147,7 @@ fn checkCollision(laser: Laser, enemy: Enemy) bool {
     return rl.checkCollisionRecs(laser_rect, enemy_rect);
 }
 
-fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy)) void {
+fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy), explosionSound: rl.Sound) void {
     for (laserList.items) |*laser| {
         if (laser.isDead) continue;
         for (enemyList.items) |*enemy| {
@@ -156,6 +156,8 @@ fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy))
             if (checkCollision(laser.*, enemy.*)) {
                 laser.isDead = true;
                 enemy.isDead = true;
+                rl.setSoundPitch(explosionSound, 2.0);
+                rl.playSound(explosionSound);
                 break;
             }
         }
@@ -236,6 +238,9 @@ pub fn main() !void {
     const shootSound: rl.Sound = try rl.loadSound("assets/laser.wav");
     defer rl.unloadSound(shootSound);
 
+    const explosionSound: rl.Sound = try rl.loadSound("assets/explosion.wav");
+    defer rl.unloadSound(explosionSound);
+
     var spaceship = try SpaceShip.init("assets/Ship_2.png", screenWidth, screenHeight);
     defer spaceship.deinit();
 
@@ -277,7 +282,7 @@ pub fn main() !void {
                 try generateEnemy(1, &enemyList, enemyTexture, screenWidth, screenHeight);
                 spawnTimer = 0.0;
             }
-            processCollisions(&laserList, &enemyList);
+            processCollisions(&laserList, &enemyList, explosionSound);
             updateEnemy(&enemyList, enemySpeed, deltaTime);
             updateLasers(&laserList, laserSpeed, deltaTime);
 
