@@ -12,10 +12,6 @@ const Laser = struct {
         return Laser{ .texture = texture, .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isDead = false };
     }
 
-    pub fn deinit(self: *Laser) void {
-        rl.unloadTexture(self.texture);
-    }
-
     pub fn laserMove(self: *Laser, laserSpeed: f32, deltaTime: f32) void {
         if (self.isDead) return;
 
@@ -28,6 +24,7 @@ const Laser = struct {
 
     pub fn draw(self: *Laser) void {
         if (!self.isDead) {
+
             rl.drawTextureEx(self.texture, self.position, 0.0, 0.2, rl.Color.white);
         }
     }
@@ -48,10 +45,6 @@ const Enemy = struct {
             .isDead = false,
             .reachedEnd = false,
         };
-    }
-
-    pub fn deinit(self: *Enemy) void {
-        rl.unloadTexture(self.texture);
     }
 
     pub fn draw(self: Enemy) void {
@@ -129,7 +122,6 @@ fn updateLasers(laserList: *ArrayList(Laser), laserSpeed: f32, deltaTime: f32) v
     while (i < laserList.items.len) {
         if (laserList.items[i].isDead) {
             _ = laserList.orderedRemove(i);
-            // laser.deinit();
         } else {
             i += 1;
         }
@@ -193,7 +185,6 @@ fn updateEnemy(enemyList: *ArrayList(Enemy), enemySpeed: f32, deltaTime: f32) vo
     while (i < enemyList.items.len) {
         if (enemyList.items[i].isDead) {
             _ = enemyList.orderedRemove(i);
-            // enemy.deinit();
         } else {
             i += 1;
         }
@@ -282,7 +273,6 @@ pub fn main() !void {
                 break;
             }
 
-
             rl.beginDrawing();
             defer rl.endDrawing();
 
@@ -306,11 +296,5 @@ pub fn main() !void {
             rl.drawText("GAME OVER", 250, 200, 48, rl.Color.red);
             rl.drawText("Press ESC to quit", 280, 300, 24, rl.Color.white);
         }
-
-
-    
-
-
-
     }
 }
