@@ -38,6 +38,7 @@ const Enemy = struct {
     position: rl.Vector2,
     screenHeight: c_int,
     isDead: bool,
+    reachedEnd: bool,
 
     pub fn init(texture: rl.Texture, screenWidth: c_int, screenHeight: c_int) Enemy {
         return Enemy{
@@ -45,6 +46,7 @@ const Enemy = struct {
             .position = rl.Vector2{ .x = @floatFromInt(rand.intRangeAtMost(c_int, 0, screenWidth)), .y = 5 },
             .screenHeight = screenHeight,
             .isDead = false,
+            .reachedEnd = false,
         };
     }
 
@@ -64,7 +66,7 @@ const Enemy = struct {
         self.position.y += enemySpeed * deltaTime;
 
         if (self.position.y > @as(f32, @floatFromInt(self.screenHeight - self.texture.height))) {
-            self.isDead = true;
+            self.reachedEnd = true;
         }
     }
 };
@@ -167,6 +169,15 @@ fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy))
     }
 }
 
+fn checkGameOver(enemyList: *ArrayList(Enemy)) bool {
+    for (enemyList.items) |*enemy| {
+        if(enemy.reachedEnd) {
+            return true;
+        }
+    }
+    return false;
+}
+
 fn drawLasers(laserList: *ArrayList(Laser)) void {
     for (laserList.items) |*laser| {
         laser.draw();
@@ -242,40 +253,64 @@ pub fn main() !void {
     const enemyTexture = try rl.loadTexture("assets/Ship_3.png");
 
 
-    while (!rl.windowShouldClose()) {
-        const deltaTime = rl.getFrameTime();
+    main_loop: while(!rl.windowShouldClose()){
+        while (!rl.windowShouldClose()) {
+            const deltaTime = rl.getFrameTime();
 
-        if (rl.isKeyDown(.left)) {
-            spaceship.moveLeft(playerSpeed, deltaTime);
+            if (rl.isKeyDown(.left)) {
+                spaceship.moveLeft(playerSpeed, deltaTime);
+            }
+
+            if (rl.isKeyDown(.right)) {
+                spaceship.moveRight(playerSpeed, deltaTime);
+            }
+
+            if (rl.isKeyDown(.space)) {
+                try spaceship.shootLaser(laserTexture, &laserList);
+            }
+
+            spawnTimer += deltaTime;
+            if(spawnTimer >= SPAWN_INTERVAL) {
+                try generateEnemy(1, &enemyList, enemyTexture, screenWidth, screenHeight);
+                spawnTimer = 0.0;
+            }
+            processCollisions(&laserList, &enemyList);
+            updateEnemy(&enemyList, enemySpeed, deltaTime);
+            updateLasers(&laserList, laserSpeed, deltaTime);
+
+            if(checkGameOver(&enemyList)) {
+                break;
+            }
+
+
+            rl.beginDrawing();
+            defer rl.endDrawing();
+
+            rl.clearBackground(rl.Color.black);
+
+            spaceship.draw();
+            drawLasers(&laserList);
+            drawEnemy(&enemyList);
+
+            rl.drawFPS(10, 10);
         }
 
-        if (rl.isKeyDown(.right)) {
-            spaceship.moveRight(playerSpeed, deltaTime);
+        while(!rl.windowShouldClose()) {
+            if(rl.isKeyPressed(.escape)) {
+                break :main_loop;
+            }
+
+            rl.beginDrawing();
+            defer rl.endDrawing();
+            rl.clearBackground(rl.Color.black);
+            rl.drawText("GAME OVER", 250, 200, 48, rl.Color.red);
+            rl.drawText("Press ESC to quit", 280, 300, 24, rl.Color.white);
         }
 
-        if (rl.isKeyDown(.space)) {
-            try spaceship.shootLaser(laserTexture, &laserList);
-        }
 
-        spawnTimer += deltaTime;
-        if(spawnTimer >= SPAWN_INTERVAL) {
-            try generateEnemy(1, &enemyList, enemyTexture, screenWidth, screenHeight);
-            spawnTimer = 0.0;
-        }
-        processCollisions(&laserList, &enemyList);
-        updateEnemy(&enemyList, enemySpeed, deltaTime);
-        updateLasers(&laserList, laserSpeed, deltaTime);
+    
 
 
-        rl.beginDrawing();
-        defer rl.endDrawing();
 
-        rl.clearBackground(rl.Color.black);
-
-        spaceship.draw();
-        drawLasers(&laserList);
-        drawEnemy(&enemyList);
-
-        rl.drawFPS(10, 10);
     }
 }
