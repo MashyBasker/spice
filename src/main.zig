@@ -7,9 +7,10 @@ const Laser = struct {
     texture: rl.Texture,
     position: rl.Vector2,
     isDead: bool,
+    reachedEnd: bool,
 
     pub fn init(texture: rl.Texture, init_x: c_int, init_y: c_int) Laser {
-        return Laser{ .texture = texture, .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isDead = false };
+        return Laser{ .texture = texture, .position = rl.Vector2{ .x = @floatFromInt(init_x), .y = @floatFromInt(init_y) }, .isDead = false, .reachedEnd = false };
     }
 
     pub fn laserMove(self: *Laser, laserSpeed: f32, deltaTime: f32) void {
@@ -17,8 +18,8 @@ const Laser = struct {
 
         self.position.y -= laserSpeed * deltaTime;
 
-        if (self.position.y == 0) {
-            self.isDead = true;
+        if (self.position.y < @as(f32, @floatFromInt(self.texture.height))) {
+            self.reachedEnd = true;
         }
     }
 
@@ -120,7 +121,7 @@ fn updateLasers(laserList: *ArrayList(Laser), laserSpeed: f32, deltaTime: f32) v
 
     var i: usize = 0;
     while (i < laserList.items.len) {
-        if (laserList.items[i].isDead) {
+        if (laserList.items[i].isDead or laserList.items[i].reachedEnd) {
             _ = laserList.orderedRemove(i);
         } else {
             i += 1;
@@ -247,7 +248,7 @@ pub fn main() !void {
                 spaceship.moveRight(playerSpeed, deltaTime);
             }
 
-            if (rl.isKeyDown(.space)) {
+            if (rl.isKeyPressed(.space)) {
                 try spaceship.shootLaser(laserTexture, &laserList);
             }
 
