@@ -214,23 +214,14 @@ pub fn main() !void {
     var spawnTimer: f32 = 0.0;
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
     var laserList = ArrayList(Laser).init(allocator);
-    defer {
-        for (laserList.items) |*laser| {
-            laser.deinit();
-        }
-        laserList.deinit();
-    }
+    defer laserList.deinit();
 
     var enemyList = ArrayList(Enemy).init(allocator);
-    defer {
-        for (enemyList.items) |*enemy| {
-            enemy.deinit();
-        }
-        enemyList.deinit();
-    }
+    defer enemyList.deinit();
 
     rl.initWindow(screenWidth, screenHeight, "Space Invaders");
     defer rl.closeWindow();
