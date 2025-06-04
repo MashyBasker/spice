@@ -147,7 +147,7 @@ fn checkCollision(laser: Laser, enemy: Enemy) bool {
     return rl.checkCollisionRecs(laser_rect, enemy_rect);
 }
 
-fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy), explosionSound: rl.Sound) void {
+fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy), explosionSound: rl.Sound, score: *i32) void {
     for (laserList.items) |*laser| {
         if (laser.isDead) continue;
         for (enemyList.items) |*enemy| {
@@ -158,6 +158,7 @@ fn processCollisions(laserList: *ArrayList(Laser), enemyList: *ArrayList(Enemy),
                 enemy.isDead = true;
                 rl.setSoundPitch(explosionSound, 2.0);
                 rl.playSound(explosionSound);
+                score.* += 1;
                 break;
             }
         }
@@ -210,11 +211,12 @@ fn generateEnemy(n: usize, enemyList: *ArrayList(Enemy), texture: rl.Texture, wi
 pub fn main() !void {
     const screenWidth: c_int = 800;
     const screenHeight: c_int = 450;
-    const playerSpeed: c_int = 200;
+    const playerSpeed: c_int = 300;
     const laserSpeed: c_int = 500;
-    const enemySpeed: c_int = 50;
-    const SPAWN_INTERVAL: f32 = 1.5;
+    const enemySpeed: c_int = 100;
+    const SPAWN_INTERVAL: f32 = 1.2;
     var spawnTimer: f32 = 0.0;
+    var score: i32 = 0;
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -282,7 +284,7 @@ pub fn main() !void {
                 try generateEnemy(1, &enemyList, enemyTexture, screenWidth, screenHeight);
                 spawnTimer = 0.0;
             }
-            processCollisions(&laserList, &enemyList, explosionSound);
+            processCollisions(&laserList, &enemyList, explosionSound, &score);
             updateEnemy(&enemyList, enemySpeed, deltaTime);
             updateLasers(&laserList, laserSpeed, deltaTime);
 
@@ -300,6 +302,9 @@ pub fn main() !void {
             drawEnemy(&enemyList);
 
             rl.drawFPS(10, 10);
+            const scoreText: [:0]const u8 = try std.fmt.allocPrintZ(allocator, "Score: {d}", .{score});
+            defer allocator.free(scoreText);
+            rl.drawText(scoreText, 10, 50, 14, rl.Color.green);
         }
 
         while(!rl.windowShouldClose()) {
@@ -311,6 +316,9 @@ pub fn main() !void {
             defer rl.endDrawing();
             rl.clearBackground(rl.Color.black);
             rl.drawText("GAME OVER", 250, 200, 48, rl.Color.red);
+            const finalScore: [:0]const u8 = try std.fmt.allocPrintZ(allocator, "FINAL SCORE: {d}", .{score});
+            defer allocator.free(finalScore);
+            rl.drawText(finalScore, 250, 250, 36, rl.Color.yellow);
             rl.drawText("Press ESC to quit", 280, 300, 24, rl.Color.white);
         }
     }
